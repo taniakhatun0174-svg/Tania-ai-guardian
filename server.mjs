@@ -112,7 +112,20 @@ app.post('/api/analyze', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: {
+        apiVersion: 'v1beta',
+        retryOptions: {
+          attempts: 4,
+          initialDelay: 2,
+          maxDelay: 10,
+          expBase: 2,
+          jitter: 1,
+          httpStatusCodes: [408, 429, 500, 502, 503, 504]
+        }
+      }
+    });
     const outputLanguage = language === 'en' ? 'English' : 'সহজ ও পরিষ্কার বাংলা';
 
     const prompt = `
@@ -140,21 +153,20 @@ ${message.trim() || 'কোনো লেখা দেওয়া হয়নি। �
 উত্তর সহজ, বাস্তবসম্মত ও সংক্ষিপ্ত রাখুন।
 `;
 
-    const parts = [{ text: prompt }];
-    if (imagePart) parts.push({ inlineData: imagePart });
-    if (videoPart) parts.push({ inlineData: videoPart });
-    if (audioPart) parts.push({ inlineData: audioPart });
+    const input = [{ type: 'text', text: prompt }];
+    if (imagePart) input.push({ type: 'image', data: imagePart.data, mime_type: imagePart.mimeType });
+    if (videoPart) input.push({ type: 'video', data: videoPart.data, mime_type: videoPart.mimeType });
+    if (audioPart) input.push({ type: 'audio', data: audioPart.data, mime_type: audioPart.mimeType });
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: [{ role: 'user', parts }],
-      config: { temperature: 0.2, maxOutputTokens: 1200 }
+    const response = await ai.interactions.create({
+      model: 'gemini-3.5-flash-lite',
+      input
     });
 
     res.json({
       ok: true,
       featureId: String(featureId),
-      analysis: response.text || 'বিশ্লেষণের উত্তর পাওয়া যায়নি।'
+      analysis: response.output_text || 'বিশ্লেষণের উত্তর পাওয়া যায়নি।'
     });
   } catch (error) {
     console.error('AI analysis failed:', {
