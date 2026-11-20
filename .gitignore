@@ -34,3 +34,5 @@ dist-ssr
 
 # Local backup images
 *backup*
+signing/
+android/app/tania-release-keystore.p12

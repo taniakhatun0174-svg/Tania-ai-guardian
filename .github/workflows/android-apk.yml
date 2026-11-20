@@ -34,15 +34,27 @@ jobs:
       - name: Sync Android
         run: npx cap sync android
 
-      - name: Build APK
+      - name: Prepare signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/tania-release-keystore.p12
+          test -s android/app/tania-release-keystore.p12
+
+      - name: Build signed Release APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
-      - name: Verify APK permissions
+      - name: Verify APK
         run: |
-          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
           "$AAPT" dump permissions "$APK" | tee /tmp/apk-permissions.txt
           grep -q "android.permission.RECORD_AUDIO" /tmp/apk-permissions.txt
@@ -52,5 +64,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TANIA-AI-GUARDIAN-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
