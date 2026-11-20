@@ -40,6 +40,14 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
+      - name: Verify APK permissions
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          "$AAPT" dump permissions "$APK" | tee /tmp/apk-permissions.txt
+          grep -q "android.permission.RECORD_AUDIO" /tmp/apk-permissions.txt
+          grep -q "android.permission.MODIFY_AUDIO_SETTINGS" /tmp/apk-permissions.txt
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
