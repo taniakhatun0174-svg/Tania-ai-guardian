@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TANIA AI GUARDIAN</string>
+    <string name="title_activity_main">TANIA AI GUARDIAN</string>
+    <string name="package_name">com.tania.aiguardian</string>
+    <string name="custom_url_scheme">com.tania.aiguardian</string>
+</resources>
