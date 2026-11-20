@@ -155,11 +155,17 @@ export default function GuardianWorkspace({ feature, english, onClose }: Props) 
 
   const speak = () => {
     if (!analysis || !('speechSynthesis' in window)) return
-    window.speechSynthesis.cancel()
+    const synth = window.speechSynthesis
+    synth.cancel()
     const utterance = new SpeechSynthesisUtterance(analysis)
+    const language = english ? 'en' : 'bn'
+    const voices = synth.getVoices()
+    const matching = voices.filter(v => v.lang.toLowerCase().startsWith(language))
+    const female = matching.find(v => /female|woman|zira|samantha|susan|aria|jenny|neerja|heera|google.*female/i.test(v.name))
+    utterance.voice = female || matching[0] || null
     utterance.lang = english ? 'en-US' : 'bn-BD'
     utterance.rate = 0.92
-    window.speechSynthesis.speak(utterance)
+    synth.speak(utterance)
   }
 
   return (
