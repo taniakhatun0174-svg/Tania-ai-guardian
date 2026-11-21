@@ -153,18 +153,50 @@ export default function GuardianWorkspace({ feature, english, onClose }: Props) 
     }
   }
 
-  const speak = () => {
-    if (!analysis || !('speechSynthesis' in window)) return
+  const speak = async () => {
+    if (!analysis) return
+
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+      setError(english ? 'Text-to-Speech is not supported on this device.' : 'এই ডিভাইসে উত্তর শুনুন সুবিধাটি সমর্থিত নয়।')
+      return
+    }
+
     const synth = window.speechSynthesis
     synth.cancel()
-    const utterance = new SpeechSynthesisUtterance(analysis)
+    synth.resume()
+    setError('')
+
+    let voices = synth.getVoices()
+
+    if (voices.length === 0) {
+      await new Promise<void>(resolve => {
+        let finished = false
+        const finish = () => {
+          if (finished) return
+          finished = true
+          window.clearTimeout(timer)
+          synth.removeEventListener('voiceschanged', finish)
+          resolve()
+        }
+        const timer = window.setTimeout(finish, 1500)
+        synth.addEventListener('voiceschanged', finish)
+      })
+      voices = synth.getVoices()
+    }
+
     const language = english ? 'en' : 'bn'
-    const voices = synth.getVoices()
     const matching = voices.filter(v => v.lang.toLowerCase().startsWith(language))
     const female = matching.find(v => /female|woman|zira|samantha|susan|aria|jenny|neerja|heera|google.*female/i.test(v.name))
-    utterance.voice = female || matching[0] || null
+
+    const utterance = new SpeechSynthesisUtterance(analysis)
     utterance.lang = english ? 'en-US' : 'bn-BD'
+    utterance.voice = female || matching[0] || null
     utterance.rate = 0.92
+    utterance.onstart = () => setError('')
+    utterance.onerror = event => {
+      setError((english ? 'Could not play voice: ' : 'উত্তর শোনা যাচ্ছে না: ') + event.error)
+    }
+
     synth.speak(utterance)
   }
 
