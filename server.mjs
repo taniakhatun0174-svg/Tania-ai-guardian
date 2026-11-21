@@ -158,10 +158,29 @@ ${message.trim() || 'কোনো লেখা দেওয়া হয়নি। �
     if (videoPart) input.push({ type: 'video', data: videoPart.data, mime_type: videoPart.mimeType });
     if (audioPart) input.push({ type: 'audio', data: audioPart.data, mime_type: audioPart.mimeType });
 
-    const response = await ai.interactions.create({
-      model: 'gemini-3.5-flash-lite',
-      input
-    });
+    let response;
+    const maxAttempts = 3;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        response = await ai.interactions.create({
+          model: 'gemini-3.5-flash-lite',
+          input
+        });
+        break;
+      } catch (error) {
+        const status = Number(error?.status || error?.statusCode || 0);
+        const retryable =
+          status === 503 ||
+          status === 429 ||
+          /currently experiencing high demand|temporarily unavailable/i.test(String(error?.message || ''));
+
+        if (!retryable || attempt === maxAttempts) throw error;
+
+        console.log(`AI temporarily busy. Retry ${attempt + 1}/${maxAttempts}...`);
+        await new Promise(resolve => setTimeout(resolve, attempt * 3000));
+      }
+    }
 
     res.json({
       ok: true,
