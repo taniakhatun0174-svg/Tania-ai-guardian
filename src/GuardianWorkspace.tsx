@@ -1,3 +1,4 @@
+import { TextToSpeech } from '@capacitor-community/text-to-speech'
 import LiveVoice from './LiveVoice'
 import { useRef, useState, type ChangeEvent } from 'react'
 
@@ -154,50 +155,42 @@ export default function GuardianWorkspace({ feature, english, onClose }: Props) 
   }
 
   const speak = async () => {
-    if (!analysis) return
+    if (!analysis.trim()) return
 
-    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
-      setError(english ? 'Text-to-Speech is not supported on this device.' : 'এই ডিভাইসে উত্তর শুনুন সুবিধাটি সমর্থিত নয়।')
-      return
-    }
-
-    const synth = window.speechSynthesis
-    synth.cancel()
-    synth.resume()
     setError('')
 
-    let voices = synth.getVoices()
+    try {
+      await TextToSpeech.stop()
 
-    if (voices.length === 0) {
-      await new Promise<void>(resolve => {
-        let finished = false
-        const finish = () => {
-          if (finished) return
-          finished = true
-          window.clearTimeout(timer)
-          synth.removeEventListener('voiceschanged', finish)
-          resolve()
-        }
-        const timer = window.setTimeout(finish, 1500)
-        synth.addEventListener('voiceschanged', finish)
+      const result = await TextToSpeech.getSupportedLanguages()
+      const languages = result.languages || []
+      const requested = english ? 'en-US' : 'bn-BD'
+      const prefix = english ? 'en' : 'bn'
+
+      const selectedLanguage =
+        languages.find(lang => lang.toLowerCase() === requested.toLowerCase()) ||
+        languages.find(lang => lang.toLowerCase().startsWith(prefix))
+
+      if (!selectedLanguage) {
+        setError(english
+          ? 'No English voice is installed. Please install an English voice in Android Text-to-Speech settings.'
+          : 'ফোনে বাংলা ভয়েস পাওয়া যায়নি। Android Text-to-Speech সেটিংসে বাংলা ভয়েস ইনস্টল করুন।')
+        return
+      }
+
+      await TextToSpeech.speak({
+        text: analysis,
+        lang: selectedLanguage,
+        rate: 0.92,
+        pitch: 1.0,
+        volume: 1.0,
+        queueStrategy: 0
       })
-      voices = synth.getVoices()
+    } catch (err) {
+      setError(err instanceof Error
+        ? (english ? 'Voice playback failed: ' : 'কণ্ঠ চালু করা যায়নি: ') + err.message
+        : (english ? 'Voice playback failed.' : 'কণ্ঠ চালু করা যায়নি।'))
     }
-
-    const language = english ? 'en' : 'bn'
-    const matching = voices.filter(v => v.lang.toLowerCase().startsWith(language))
-    const female = matching.find(v => /female|woman|zira|samantha|susan|aria|jenny|neerja|heera|google.*female/i.test(v.name))
-
-    const utterance = new SpeechSynthesisUtterance(analysis)
-    utterance.lang = english ? 'en-US' : 'bn-BD'
-    utterance.voice = female || matching[0] || null
-    utterance.rate = 0.92
-    utterance.onstart = () => setError('')
-    utterance.onerror = event => {
-      setError((english ? 'Could not play voice: ' : 'উত্তর শোনা যাচ্ছে না: ') + event.error)
-    }
-
-    synth.speak(utterance)
   }
 
   return (
