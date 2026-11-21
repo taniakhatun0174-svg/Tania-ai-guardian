@@ -175,7 +175,16 @@ ${message.trim() || 'কোনো লেখা দেওয়া হয়নি। �
           status === 429 ||
           /currently experiencing high demand|temporarily unavailable/i.test(String(error?.message || ''));
 
-        if (!retryable || attempt === maxAttempts) throw error;
+        if (!retryable) throw error;
+
+        if (attempt === maxAttempts) {
+          console.log('Primary model busy. Trying fallback model: gemini-3.1-flash-lite');
+          response = await ai.interactions.create({
+            model: 'gemini-3.1-flash-lite',
+            input
+          });
+          break;
+        }
 
         console.log(`AI temporarily busy. Retry ${attempt + 1}/${maxAttempts}...`);
         await new Promise(resolve => setTimeout(resolve, attempt * 3000));
