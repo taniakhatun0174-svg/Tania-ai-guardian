@@ -55,6 +55,13 @@ jobs:
         run: |
           APK="android/app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          CERT_SHA256="$("$APKSIGNER" verify --print-certs "$APK" | awk -F': ' '/Signer #1 certificate SHA-256 digest:/ {print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          EXPECTED_SHA256="1dc2fc791471016b56942e6e16c0dd1fe160de0a9a9c9d60df779c96a2cc39f4"
+          echo "APK certificate SHA256: $CERT_SHA256"
+          test "$CERT_SHA256" = "$EXPECTED_SHA256"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
           "$AAPT" dump permissions "$APK" | tee /tmp/apk-permissions.txt
           grep -q "android.permission.RECORD_AUDIO" /tmp/apk-permissions.txt
