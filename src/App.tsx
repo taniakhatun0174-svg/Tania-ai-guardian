@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import './App.css'
 import GuardianWorkspace from './GuardianWorkspace'
+import FounderDashboard from './FounderDashboard'
+import PrivacyConsent from './PrivacyConsent'
 
 const guardianImages = ['life','truth','scam','voice','family','emergency','phone-number','face-video','fake-job','payment','shopping','website-link','social-media','document','privacy','cyber-help'];
 
@@ -35,6 +37,25 @@ const features: Feature[] = [
 function App() {
   const [showWelcome, setShowWelcome] = useState(true)
   const [english, setEnglish] = useState(false)
+  const [privacyChoice, setPrivacyChoice] = useState<'accepted' | 'declined' | null>(() => {
+    try {
+      const saved = localStorage.getItem('tania-privacy-consent-v1')
+      return saved === 'accepted' || saved === 'declined' ? saved : null
+    } catch {
+      return null
+    }
+  })
+  const [showPrivacySettings, setShowPrivacySettings] = useState(false)
+
+  const savePrivacyChoice = (choice: 'accepted' | 'declined') => {
+    try {
+      localStorage.setItem('tania-privacy-consent-v1', choice)
+    } catch {
+      // App remains usable if local storage is unavailable.
+    }
+    setPrivacyChoice(choice)
+    setShowPrivacySettings(false)
+  }
   const [selected, setSelected] = useState<Feature | null>(null)
   const [search, setSearch] = useState('')
 
@@ -44,6 +65,20 @@ function App() {
 
   const main = filtered.filter((f) => f.group === 'MAIN GUARDIANS')
   const special = filtered.filter((f) => f.group === 'SPECIAL PROTECTION')
+
+  if (privacyChoice === null) {
+    return <PrivacyConsent english={english} onChoice={savePrivacyChoice} />
+  }
+
+  if (showPrivacySettings) {
+    return (
+      <PrivacyConsent
+        english={english}
+        onChoice={savePrivacyChoice}
+        onClose={() => setShowPrivacySettings(false)}
+      />
+    )
+  }
 
   if (showWelcome) {
     return (
@@ -130,9 +165,10 @@ function App() {
         <div><strong>{english ? 'Safety with transparency' : 'স্বচ্ছতার সঙ্গে নিরাপত্তা'}</strong><p>{english ? 'AI results are guidance, not guaranteed proof. Verify important information independently.' : 'AI-এর ফলাফল সহায়ক তথ্য, শতভাগ প্রমাণ নয়। গুরুত্বপূর্ণ তথ্য নিজে যাচাই করুন।'}</p></div>
       </section>
 
-      <footer><div className="footer-brand">✦ TANIA AI GUARDIAN <span>FOUNDER: TANIA</span></div><p>{english ? 'Built to help make the digital world safer.' : 'ডিজিটাল পৃথিবীকে আরও নিরাপদ করতে আমাদের যাত্রা।'}</p><small>© 2026 TANIA · TANIA AI GUARDIAN</small></footer>
+      <footer><div className="footer-brand">✦ TANIA AI GUARDIAN <span>FOUNDER: TANIA</span></div><p>{english ? 'Built to help make the digital world safer.' : 'ডিজিটাল পৃথিবীকে আরও নিরাপদ করতে আমাদের যাত্রা।'}</p><button className="privacy-settings-link" onClick={() => setShowPrivacySettings(true)}>{english ? 'Privacy & Consent Settings' : 'গোপনীয়তা ও সম্মতি সেটিংস'}</button><small>© 2026 TANIA · TANIA AI GUARDIAN</small></footer>
 
       {selected && <GuardianWorkspace key={selected.id} feature={selected} english={english} onClose={() => setSelected(null)} />}
+      <FounderDashboard english={english} />
     </main>
   )
 }

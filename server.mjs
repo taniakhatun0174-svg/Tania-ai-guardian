@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { GoogleGenAI } from '@google/genai';
+import { configureFounderDashboard } from './server/founder-dashboard.mjs';
 
 const app = express();
 app.disable('x-powered-by');
@@ -15,6 +16,8 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json({ limit: '24mb' }));
+
+await configureFounderDashboard(app);
 
 const features = {
   '1': 'Life Guardian: দৈনন্দিন জীবনের ঝুঁকি, গুরুত্বপূর্ণ সিদ্ধান্ত ও নিরাপদ করণীয় বিশ্লেষণ করুন।',

@@ -8,21 +8,31 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node --env-file-if-exists=.env server.mjs"
+    "server": "node --env-file-if-exists=.env --env-file-if-exists=.founder-render-env.txt server.mjs"
   },
   "dependencies": {
     "@capacitor-community/text-to-speech": "^8.0.2",
     "@capacitor/android": "^8.6.2",
     "@capacitor/core": "^8.6.2",
     "@google/genai": "^3.3.0",
+    "@neon/config": "^1.14.8",
+    "@neon/env": "^2.1.11",
+    "bcryptjs": "^3.0.3",
+    "connect-pg-simple": "^10.0.0",
     "express": "^5.3.0",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "pg": "^8.23.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.6.2",
     "@eslint/js": "^10.0.1",
+    "@types/connect-pg-simple": "^7.0.3",
+    "@types/express-session": "^1.19.0",
     "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
